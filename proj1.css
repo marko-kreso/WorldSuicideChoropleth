@@ -1,0 +1,8 @@
+.country{
+    stroke-width: .5px;
+    stroke: black;
+}
+
+.slider{
+    display: inline-block;
+}
