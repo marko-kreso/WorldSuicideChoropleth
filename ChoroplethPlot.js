@@ -17,10 +17,12 @@ data2 = d3.nest()
             d,
             totalProp: d3.sum(d, (v) => v["suicides/100k pop"]),
             pop: d3.sum(d, (v) => v.population),
-            gdp: Number(d[0]['gdp_for_year ($)'].split(",").join(""))
+            gdp: Number(d[0]['gdp_for_year ($)'].split(",").join("")),
+            year: Number(d[0]["year"])
         };
     })
     .map(data)
+
 var padding = 50
 var width = 1000
 var height = 500
@@ -39,6 +41,16 @@ var svgScatter = d3.select("#scatter").append("svg")
     .attr("height", height / 2)
     .attr("id", "scatterSvg")
 svgScatter.append("rect")
+    .attr("width", width / 2)
+    .attr("height", height / 2)
+    .attr("fill", "lightgray")
+
+var svgTime = d3.select("#time").append("svg")
+    .attr("width", width / 2)
+    .attr("height", height / 2)
+    .attr("id", "timeSvg")
+
+svgTime.append("rect")
     .attr("width", width / 2)
     .attr("height", height / 2)
     .attr("fill", "lightgray")
@@ -72,6 +84,45 @@ function setupScatter(data, countries, year) {
     
 }
 
+function updateTimeSeries(countriesData, CurYear){
+    if(countriesData.length != 0){
+        console.log(countriesData)
+        let paths = svgTime.select("#countryPaths")
+        
+        if(paths.empty()){
+            paths = svgTime.append("g")
+                   .attr("id", "countryPaths")
+        }
+
+        let countryTime = paths.selectAll("path").data(countriesData, (d) =>{return d.id})
+
+        countryTime.enter().append("path")
+
+        let dat = countriesData.map((d) => d.properties.years)
+
+        console.log(dat)
+        console.log(concatAttr(dat, "year"))
+
+        let extentTime = [d3.min(countriesData, (d) => d3.min(d.properties.years.keys())), d3.max(countriesData, (d) => d3.max(d.properties.years.keys()))]
+
+        
+
+    }
+}
+
+function concatAttr(dat, attr){
+    let valuesAttr = new Array()
+    let itr = dat.values()
+
+    let res = itr.next()
+
+    while(!res.done){
+        console.log(res.value)
+        valuesAttr.concat(res.value[attr])
+        res = itr.next()
+    }
+
+}
 
 d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(data => {
     var countries = []
@@ -222,11 +273,11 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("opacity", (d) => {if(selectedCountries.has(d.id)){return .75;} return .55;})
             .attr("stroke", (d) =>{console.log("HE");if(selectedCountries.has(d.id)){console.log("T");return "black"} return "None"})
             .style("stroke-width", (d) =>{if(selectedCountries.has(d.id)){return "2px"} return "0px"})
-            
 
-
-
+        
+        updateTimeSeries(Array.from(selectedCountries.values()), year)
     }
+
     function getYear(){
         return slider.node().value
     }
@@ -243,19 +294,19 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
         })
 
     let running = false;
-    let t
+    let timer
     var play = d3.select("#play")
         .on("click", () => {
             if (running != true) {
                 play.node().innerHTML = "Pause"
-                t = setInterval(() => {
+                timer = setInterval(() => {
                     if (slider.node().max > slider.node().value) {
                         running = true;
                         update(++slider.node().value)
                     }
                     if (slider.node().max <= slider.node().value) {
                         running = false
-                        clearInterval(t);
+                        clearInterval(timer);
                     }
                 }, 500);
             } else {
@@ -266,7 +317,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     function stopPlay() {
         running = false;
         play.node().innerHTML = "Play"
-        clearInterval(t);
+        clearInterval(timer);
     }
 
     function getTotal(d, year, attr, scale) {
