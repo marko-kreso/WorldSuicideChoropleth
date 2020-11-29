@@ -81,47 +81,74 @@ function setupScatter(data, countries, year) {
         .append("circle")
         .attr("class", "test")
     console.log("COUNTRY")
-    
+
 }
 
-function updateTimeSeries(countriesData, CurYear){
-    if(countriesData.length != 0){
+function updateTimeSeries(countriesData, CurYear) {
+    if (countriesData.length != 0) {
         console.log(countriesData)
         let paths = svgTime.select("#countryPaths")
-        
-        if(paths.empty()){
+        let timeSeriesAxis = svgTime.select("#timeSeriesTimeAxis")
+        let attrSeriesAxis = svgTime.select("#timeSeriesYAxis")
+
+        if (paths.empty()) {
             paths = svgTime.append("g")
-                   .attr("id", "countryPaths")
+                .attr("id", "countryPaths")
+
         }
 
-        let countryTime = paths.selectAll("path").data(countriesData, (d) =>{return d.id})
+        let countryTime = paths.selectAll("path").data(countriesData, (d) => { return d.id })
 
         countryTime.enter().append("path")
 
         let dat = countriesData.map((d) => d.properties.years)
 
-        console.log(dat)
-        console.log(concatAttr(dat, "year"))
+        let time = concatAttr(dat, "year")
+        let deaths = concatAttr(dat, "total")
 
-        let extentTime = [d3.min(countriesData, (d) => d3.min(d.properties.years.keys())), d3.max(countriesData, (d) => d3.max(d.properties.years.keys()))]
+        let extentTime = d3.extent(Array.from(time.values()))
+        let extentDeaths = d3.extent(Array.from(deaths.values()))
+
+        let scaleTime = d3.scaleLinear().domain(extentTime).range([padding, width / 2 - padding / 4])
+        let scaleDeath = d3.scaleLinear().domain(extentDeaths).range([height / 2 - padding, padding / 3])
+
 
         
+
+
+        let axisXTime = d3.axisBottom().scale(scaleTime).tickFormat(d3.format("d"))
+        let axisYTime = d3.axisLeft().scale(scaleDeath).ticks(6, "s")
+
+        timeSeriesAxis.remove()
+        attrSeriesAxis.remove()
+
+        timeSeriesAxis = svgTime.append("g")
+            .attr("id", "timeSeriesTimeAxis")
+        attrSeriesAxis = svgTime.append("g")
+            .attr("id", "timeSeriesYAxis")
+        
+        timeSeriesAxis.call(axisXTime)
+        attrSeriesAxis.call(axisYTime)
+
+        timeSeriesAxis.attr("transform", `translate(0, ${height/2-padding})`)
+        attrSeriesAxis.attr("transform", `translate(${padding}, 0)`)
+
+
 
     }
 }
 
-function concatAttr(dat, attr){
-    let valuesAttr = new Array()
-    let itr = dat.values()
+function concatAttr(dat, attr) {
+    let valuesAttr = new Set()
 
-    let res = itr.next()
-
-    while(!res.done){
-        console.log(res.value)
-        valuesAttr.concat(res.value[attr])
-        res = itr.next()
+    for (let i = 0; i < dat.length; i++) {
+        let values = dat[i].values()
+        for (let j = 0; j < values.length; j++) {
+            valuesAttr.add(values[j][attr])
+        }
     }
 
+    return valuesAttr
 }
 
 d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(data => {
@@ -176,7 +203,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     var gdpRange = d3.extent(getAll("gdp"))
     var popRange = d3.extent(getAll("pop"))
 
-    
+
     // var gdpRange = d3.extent(validValues, (d) => d3.max(d.properties.years.values(), (v) => v.gdp))
 
     // var popRange = d3.extent(validValues, (d) => d3.max(d.properties.years.values(), (v) => v.pop))
@@ -184,7 +211,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     countryShapes.on("mouseover", function (d) {
         let shapes = countryShapes.filter((d) => !selectedCountries.has(d.id))
         shapes.transition("highlight").duration(200).style("opacity", .75)
-        if(!selectedCountries.has(d.id)){
+        if (!selectedCountries.has(d.id)) {
             d3.select(this).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "3px")
         }
     })
@@ -264,21 +291,26 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", .55)
-            .attr("fill", (d) => {if(selectedCountries.has(d.id)){return "orange"} else{return "blue"}})
+            .attr("fill", (d) => { if (selectedCountries.has(d.id)) { return "orange" } else { return "blue" } })
 
-        d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => {if(selectedCountries.has(d.id)){return "red"} else{return "blue"}})
+        d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return "red" } else { return "blue" } })
             .attr("cx", (d) => { return getTotal(d, year, "total", scatterXScale) })
             .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
-            .attr("opacity", (d) => {if(selectedCountries.has(d.id)){return .75;} return .55;})
-            .attr("stroke", (d) =>{console.log("HE");if(selectedCountries.has(d.id)){console.log("T");return "black"} return "None"})
-            .style("stroke-width", (d) =>{if(selectedCountries.has(d.id)){return "2px"} return "0px"})
+            .attr("opacity", (d) => { if (selectedCountries.has(d.id)) { return .75; } return .55; })
+            .attr("stroke", (d) => { console.log("HE"); if (selectedCountries.has(d.id)) { console.log("T"); return "black" } return "None" })
+            .style("stroke-width", (d) => { if (selectedCountries.has(d.id)) { return "2px" } return "0px" })
 
-        
-        updateTimeSeries(Array.from(selectedCountries.values()), year)
+        if(selectedCountries.size != 0){
+            updateTimeSeries(Array.from(selectedCountries.values()), year)
+        }
+        else{
+            svgTime.select("#timeSeriesTimeAxis").remove()
+            svgTime.select("#timeSeriesYAxis").remove()
+        }
     }
 
-    function getYear(){
+    function getYear() {
         return slider.node().value
     }
 
