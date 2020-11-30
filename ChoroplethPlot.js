@@ -8,6 +8,7 @@ quanAttr = Object.keys(data[0]).filter((d) => typeof data[0][d] === "number")
 extent = d3.extent(data, (d) => d.suicides_no)
 years = d3.extent(data, (d) => d.year)
 years[1]--;
+
 data2 = d3.nest()
     .key((d) => d.country)
     .key((d) => d.year)
@@ -18,7 +19,8 @@ data2 = d3.nest()
             totalProp: d3.sum(d, (v) => v["suicides/100k pop"]),
             pop: d3.sum(d, (v) => v.population),
             gdp: Number(d[0]['gdp_for_year ($)'].split(",").join("")),
-            year: Number(d[0]["year"])
+            year: Number(d[0]["year"]),
+            id: undefined
         };
     })
     .map(data)
@@ -66,11 +68,41 @@ var nameMap = {
     "The Bahamas": "Bahamas",
     "South Korea": "Republic of Korea",
     "Russia": "Russian Federation",
-    "Serbia": "Republic of Serbia",
+    "Republic of Serbia": "Serbia",
     "England": "United Kingdom",
     "USA": "United States"
 }
+function createLegend(selectedCountries){
+    d3.select("#legend").select("g").remove()
+    let leg = d3.select("#legend").append("g")
 
+    console.log(selectedCountries)
+
+
+    // leg.selectAll("rect")             //Adds a square that shows which attribute category corresponds to which color
+    //     .data(allCategories)
+    //     .join("rect")
+    //     .attr("fill", (d) => colorScales[d])
+    //     .attr("x", (d, i) => i * (w / 2 / allCategories.length + 5) + 10)
+    //     .attr("y", 10)
+    //     .attr("width", 10)
+    //     .attr("height", 10)
+
+    // legendBox.selectAll("text")             //Adds a the label of the category next to the square
+    //     .data(Object.keys(colorScales))
+    //     .join("text")
+    //     .text((d) => d)
+    //     .attr("x", (d, i) => i * (w / 2 / allCategories.length + 5) + 30)
+    //     .attr("y", 20)
+
+    // legendBox.append("rect")                //Adds a border around the legend
+    //     .attr("width", w / 2)
+    //     .attr("fill", "none")
+    //     .attr("stroke", "black")
+    //     .attr("height", 30)
+
+    // legendBox.attr("transform", "translate(" + w / 4 + "," + (attribs.length) * (size + padding / 3 + 1) + ")")
+}
 function setupScatter(data, countries, year) {
     let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
     countryPoints = svgScatter.append("g")
@@ -84,36 +116,51 @@ function setupScatter(data, countries, year) {
 
 }
 
-function updateTimeSeries(countriesData, CurYear) {
+function updateTimeSeries(countriesData, curYear) {
     if (countriesData.length != 0) {
-        console.log(countriesData)
+        svgTime.selectAll("*").remove()
+        svgTime.append("rect")
+            .attr("width", width / 2)
+            .attr("height", height / 2)
+            .attr("fill", "lightgray")
+
         let paths = svgTime.select("#countryPaths")
         let timeSeriesAxis = svgTime.select("#timeSeriesTimeAxis")
         let attrSeriesAxis = svgTime.select("#timeSeriesYAxis")
 
-        if (paths.empty()) {
-            paths = svgTime.append("g")
-                .attr("id", "countryPaths")
 
-        }
-
-        let countryTime = paths.selectAll("path").data(countriesData, (d) => { return d.id })
-
-        countryTime.enter().append("path")
+        paths = svgTime.append("g")
+            .attr("id", "countryPaths")
 
         let dat = countriesData.map((d) => d.properties.years)
+        let countryTime = paths.selectAll("path").data(dat)
 
         let time = concatAttr(dat, "year")
         let deaths = concatAttr(dat, "total")
 
         let extentTime = d3.extent(Array.from(time.values()))
+        
+        if(extentTime[1] > endYear){
+            extentTime[1] = endYear
+        }
+        
         let extentDeaths = d3.extent(Array.from(deaths.values()))
 
         let scaleTime = d3.scaleLinear().domain(extentTime).range([padding, width / 2 - padding / 4])
         let scaleDeath = d3.scaleLinear().domain(extentDeaths).range([height / 2 - padding, padding / 3])
 
 
-        
+        countryTime.enter()
+            .append("path")
+            .attr("d", (d) => createPathTime(d, "total", scaleTime, scaleDeath))
+            .attr("stroke", (d) => {return getColor(d.values()[0].id);})
+            .style("stroke-width", 1)
+            .attr("fill", "None")
+
+        countryTime.enter()
+            .each((d) => {
+                createCircleTime(d, "total", scaleTime, scaleDeath, curYear)
+            })
 
 
         let axisXTime = d3.axisBottom().scale(scaleTime).tickFormat(d3.format("d"))
@@ -126,54 +173,116 @@ function updateTimeSeries(countriesData, CurYear) {
             .attr("id", "timeSeriesTimeAxis")
         attrSeriesAxis = svgTime.append("g")
             .attr("id", "timeSeriesYAxis")
-        
+
         timeSeriesAxis.call(axisXTime)
         attrSeriesAxis.call(axisYTime)
 
-        timeSeriesAxis.attr("transform", `translate(0, ${height/2-padding})`)
+        timeSeriesAxis.attr("transform", `translate(0, ${height / 2 - padding})`)
         attrSeriesAxis.attr("transform", `translate(${padding}, 0)`)
+
+        svgTime.append("text").attr("class", "xTimeTitle").text("Year").attr("transform", `translate(${width / 4}, ${height / 2 - padding / 4})`)
+        svgTime.append("text").attr("class", "yTimeTitle").text("Suicide No.").attr("transform", `translate(${padding / 3}, ${height / 3})rotate(-90)`)
 
 
 
     }
+}
+
+function createCircleTime(d, attr, timeScale, attrScale, curYear) {
+    let vals = d.values()
+
+
+    let circ = svgTime.append("g").attr("class", "timeCirc").selectAll("circ").data(vals, vals["year"])
+
+    circ.enter()
+        .append("circle")
+        .attr("r", 2)
+        .attr("cx", (d) => { return timeScale(d["year"]) })
+        .attr("cy", (d) => { return attrScale(d[attr]) })
+        .attr("stroke", "black")
+        .style("stroke-width", .5)
+        .attr("fill", (d) => {
+            if (curYear == d["year"]) {
+                return "red";
+            }
+            else {
+                return getColor(d.id);
+            }
+        })
+}
+
+function createPathTime(d, attr, timeScale, attrScale) {
+    let vals = d.values()
+
+    let path = d3.path()
+    path.moveTo(timeScale(vals[0]["year"]), attrScale(vals[0][attr]))
+
+    vals.forEach((d) => {
+        path.lineTo(timeScale(d["year"]), attrScale(d[attr]))
+    })
+    return path
 }
 
 function concatAttr(dat, attr) {
     let valuesAttr = new Set()
 
     for (let i = 0; i < dat.length; i++) {
-        let values = dat[i].values()
-        for (let j = 0; j < values.length; j++) {
-            valuesAttr.add(values[j][attr])
+        if(dat[i] != undefined){
+            let values = dat[i].values()
+            for (let j = 0; j < values.length; j++) {
+                valuesAttr.add(values[j][attr])
+            }
         }
     }
 
     return valuesAttr
 }
 
+function getColor(id){
+    if(cateColorMap.has(id)){
+        return cateColorMap.get(id)
+    }else{
+        let itr = cateColorMap.values()
+        let val = itr.next()
+        let i = 0
+        while(d3.schemeSet3.includes(val.value)){
+            val = itr.next()
+            i += 1
+        }
+        cateColorMap.set(id, d3.schemeSet3[i])
+        return cateColorMap.get(id)
+    }
+
+}
+
 d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(data => {
     var countries = []
+    cateColorMap = new Map()
+    nameToId = new Map()
 
     data.features.forEach(function (d) { //Grabs any countries that contain name
         let name = d.properties.name
         if (data2.has(name) || nameMap[name] != undefined) {
             countries.push(name);
             if (nameMap[name] != undefined) {
+                nameToId.set(nameMap[name], d.id)
+                data2.get(nameMap[name]).values().map((q) => q.id = d.id)
                 d.properties.years = data2.get(nameMap[name])
             } else {
+                nameToId.set(name, d.id)
                 nameMap[name] = name
+                data2.get(name).values().map((q) => {q.id = d.id})
                 d.properties.years = data2.get(name)
             }
 
         }
     })
+    console.log(data)
+    console.log(countries.sort())
 
-    // console.log(countries)
-    // console.log(data2.keys().filter((d) => {return !(countriesOnMap.includes(d))}))
-    let startYear = years[0]
-    let endYear = years[1]
+    startYear = years[0]
+    endYear = years[1]
 
-    console.log(startYear)
 
     let countryShapes = svgChoro.append("g")
         .attr("class", "countries")
@@ -223,13 +332,18 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     let selectedCountries = new Map()
 
     countryShapes.on("click", function (d) {
-        if (selectedCountries.has(d.id)) {
-            selectedCountries.delete(d.id)
-        } else {
-            d3.select(this).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "2px")
-            selectedCountries.set(d.id, d)
+        console.log(d)
+        console.log(d.properties.name)
+
+        if(countries.includes(d.properties.name) && selectedCountries.size <= d3.schemeSet3.length){
+            if (selectedCountries.has(d.id)) {
+                selectedCountries.delete(d.id)
+            } else {
+                d3.select(this).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "2px")
+                selectedCountries.set(d.id, d)
+            }
+            update(getYear())
         }
-        update(getYear())
     })
 
 
@@ -241,6 +355,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
 
     function update(year) {
         let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
+        console.log(validValues)
         slider.property("value", year)
 
         d3.select(".year").text(year)
@@ -293,20 +408,24 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("opacity", .55)
             .attr("fill", (d) => { if (selectedCountries.has(d.id)) { return "orange" } else { return "blue" } })
 
-        d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return "red" } else { return "blue" } })
+        d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) {return getColor(d.id)} else { return "blue" } })
             .attr("cx", (d) => { return getTotal(d, year, "total", scatterXScale) })
             .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", (d) => { if (selectedCountries.has(d.id)) { return .75; } return .55; })
-            .attr("stroke", (d) => { console.log("HE"); if (selectedCountries.has(d.id)) { console.log("T"); return "black" } return "None" })
-            .style("stroke-width", (d) => { if (selectedCountries.has(d.id)) { return "2px" } return "0px" })
+            .attr("stroke", (d) => { console.log("HE"); if (selectedCountries.has(d.id)) {return "black" } return "None" })
+            .style("stroke-width", (d) => { if (selectedCountries.has(d.id)) { return "1px" } return "0px" })
 
-        if(selectedCountries.size != 0){
+        if (selectedCountries.size != 0) {
             updateTimeSeries(Array.from(selectedCountries.values()), year)
+            createLegend(selectedCountries)
         }
-        else{
-            svgTime.select("#timeSeriesTimeAxis").remove()
-            svgTime.select("#timeSeriesYAxis").remove()
+        else {
+            svgTime.selectAll("*").remove()
+            svgTime.append("rect")
+                .attr("width", width / 2)
+                .attr("height", height / 2)
+                .attr("fill", "lightgray")
         }
     }
 
