@@ -72,36 +72,54 @@ var nameMap = {
     "England": "United Kingdom",
     "USA": "United States"
 }
-function createLegend(selectedCountries){
-    d3.select("#legend").select("g").remove()
-    let leg = d3.select("#legend").append("g")
+function createLegend(selectedCountries) {
+    let leg = d3.select("#legend").remove()
 
-    console.log(selectedCountries)
+    leg = d3.select("body").append("svg")
+        .attr("id", "legend")
+        .attr("width", width / 2)
+        .attr("height", height / 2)
+
+    
+    leg.append("rect")
+        .attr("width", width / 2)
+        .attr("height", 50)
+        .attr("fill", "lightgray")
 
 
-    // leg.selectAll("rect")             //Adds a square that shows which attribute category corresponds to which color
-    //     .data(allCategories)
-    //     .join("rect")
-    //     .attr("fill", (d) => colorScales[d])
-    //     .attr("x", (d, i) => i * (w / 2 / allCategories.length + 5) + 10)
-    //     .attr("y", 10)
-    //     .attr("width", 10)
-    //     .attr("height", 10)
+    leg.append("text")
+       .text("Legend")
+       .attr("x", width/4)
+       .attr("y", 15)
+       .style("text-anchor", "middle")
 
-    // legendBox.selectAll("text")             //Adds a the label of the category next to the square
-    //     .data(Object.keys(colorScales))
-    //     .join("text")
-    //     .text((d) => d)
-    //     .attr("x", (d, i) => i * (w / 2 / allCategories.length + 5) + 30)
-    //     .attr("y", 20)
+    let selectedIds = new Array()
+    let itr = selectedCountries.keys()
+    let next = itr.next()
 
-    // legendBox.append("rect")                //Adds a border around the legend
-    //     .attr("width", w / 2)
-    //     .attr("fill", "none")
-    //     .attr("stroke", "black")
-    //     .attr("height", 30)
+    while (!next.done) {
+        selectedIds.push(next.value)
+        next = itr.next()
+    }
 
-    // legendBox.attr("transform", "translate(" + w / 4 + "," + (attribs.length) * (size + padding / 3 + 1) + ")")
+    leg.selectAll("rect")             //Adds a square that shows which attribute category corresponds to which color
+        .data(selectedIds, (d) => d)
+        .enter()
+        .append("rect")
+        .attr("fill", (d) => getColor(d))
+        .attr("x", (d, i) => i * (width / 2 / selectedIds.length) + 10)
+        .attr("y", 30)
+        .attr("width", 10)
+        .attr("height", 10)
+
+    leg.selectAll("text")             //Adds a the label of the category next to the square
+        .data(selectedIds, (d) => d)
+        .enter()
+        .append("text")
+        .text((d) => d)
+        .attr("x", (d, i) => i * (width / 2 / selectedIds.length) + 22)
+        .attr("y", 40)
+
 }
 function setupScatter(data, countries, year) {
     let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
@@ -119,6 +137,7 @@ function setupScatter(data, countries, year) {
 function updateTimeSeries(countriesData, curYear) {
     if (countriesData.length != 0) {
         svgTime.selectAll("*").remove()
+
         svgTime.append("rect")
             .attr("width", width / 2)
             .attr("height", height / 2)
@@ -139,11 +158,11 @@ function updateTimeSeries(countriesData, curYear) {
         let deaths = concatAttr(dat, "total")
 
         let extentTime = d3.extent(Array.from(time.values()))
-        
-        if(extentTime[1] > endYear){
+
+        if (extentTime[1] > endYear) {
             extentTime[1] = endYear
         }
-        
+
         let extentDeaths = d3.extent(Array.from(deaths.values()))
 
         let scaleTime = d3.scaleLinear().domain(extentTime).range([padding, width / 2 - padding / 4])
@@ -153,7 +172,7 @@ function updateTimeSeries(countriesData, curYear) {
         countryTime.enter()
             .append("path")
             .attr("d", (d) => createPathTime(d, "total", scaleTime, scaleDeath))
-            .attr("stroke", (d) => {return getColor(d.values()[0].id);})
+            .attr("stroke", (d) => { return getColor(d.values()[0].id); })
             .style("stroke-width", 1)
             .attr("fill", "None")
 
@@ -218,7 +237,11 @@ function createPathTime(d, attr, timeScale, attrScale) {
     path.moveTo(timeScale(vals[0]["year"]), attrScale(vals[0][attr]))
 
     vals.forEach((d) => {
-        path.lineTo(timeScale(d["year"]), attrScale(d[attr]))
+        if(d["year"] > endYear){
+            path.moveTo(timeScale(d["year"]), attrScale(d[attr]))
+        }else{
+            path.lineTo(timeScale(d["year"]), attrScale(d[attr]))
+        }
     })
     return path
 }
@@ -227,7 +250,7 @@ function concatAttr(dat, attr) {
     let valuesAttr = new Set()
 
     for (let i = 0; i < dat.length; i++) {
-        if(dat[i] != undefined){
+        if (dat[i] != undefined) {
             let values = dat[i].values()
             for (let j = 0; j < values.length; j++) {
                 valuesAttr.add(values[j][attr])
@@ -238,21 +261,19 @@ function concatAttr(dat, attr) {
     return valuesAttr
 }
 
-function getColor(id){
-    if(cateColorMap.has(id)){
+function getColor(id) {
+    if (cateColorMap.has(id)) {
+        console.log("HAS!!!")
         return cateColorMap.get(id)
-    }else{
-        let itr = cateColorMap.values()
-        let val = itr.next()
-        let i = 0
-        while(d3.schemeSet3.includes(val.value)){
-            val = itr.next()
-            i += 1
-        }
-        cateColorMap.set(id, d3.schemeSet3[i])
+    } else {
+        let colorCopy = JSON.parse(JSON.stringify(d3.schemeSet3))
+        console.log(cateColorMap)
+        cateColorMap.forEach((v) => {
+            colorCopy.splice(colorCopy.indexOf(v), 1)
+        })
+        cateColorMap.set(id, colorCopy[0])
         return cateColorMap.get(id)
     }
-
 }
 
 d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(data => {
@@ -271,7 +292,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             } else {
                 nameToId.set(name, d.id)
                 nameMap[name] = name
-                data2.get(name).values().map((q) => {q.id = d.id})
+                data2.get(name).values().map((q) => { q.id = d.id })
                 d.properties.years = data2.get(name)
             }
 
@@ -335,10 +356,13 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
         console.log(d)
         console.log(d.properties.name)
 
-        if(countries.includes(d.properties.name) && selectedCountries.size <= d3.schemeSet3.length){
+        if (countries.includes(d.properties.name)) {
             if (selectedCountries.has(d.id)) {
+                console.log(cateColorMap)
+                cateColorMap.delete(d.id)
                 selectedCountries.delete(d.id)
-            } else {
+            } 
+            else if(selectedCountries.size < 8) {
                 d3.select(this).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "2px")
                 selectedCountries.set(d.id, d)
             }
@@ -408,12 +432,12 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("opacity", .55)
             .attr("fill", (d) => { if (selectedCountries.has(d.id)) { return "orange" } else { return "blue" } })
 
-        d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) {return getColor(d.id)} else { return "blue" } })
+        d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return getColor(d.id) } else { return "blue" } })
             .attr("cx", (d) => { return getTotal(d, year, "total", scatterXScale) })
             .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", (d) => { if (selectedCountries.has(d.id)) { return .75; } return .55; })
-            .attr("stroke", (d) => { console.log("HE"); if (selectedCountries.has(d.id)) {return "black" } return "None" })
+            .attr("stroke", (d) => { console.log("HE"); if (selectedCountries.has(d.id)) { return "black" } return "None" })
             .style("stroke-width", (d) => { if (selectedCountries.has(d.id)) { return "1px" } return "0px" })
 
         if (selectedCountries.size != 0) {
@@ -422,6 +446,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
         }
         else {
             svgTime.selectAll("*").remove()
+            d3.select("#legend").remove()
             svgTime.append("rect")
                 .attr("width", width / 2)
                 .attr("height", height / 2)
