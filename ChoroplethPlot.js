@@ -28,11 +28,15 @@ data2 = d3.nest()
 var padding = 50
 var width = 1000
 var height = 500
+
+var widthSmallPlot = 800
+var heightSmallPlot = 400
+
 var svgChoro = d3.select("#choro").append("svg")
     .attr("width", width)
     .attr("height", height)
     .attr("id", "choroSvg")
-    .call(d3.zoom().on("zoom", function(){
+    .call(d3.zoom().on("zoom", function () {
         svgChoro.attr("transform", d3.event.transform)
     })).append("g")
 d3.select("#choro").style("background-color", "lightgray").style("display", "inline-block")
@@ -43,22 +47,22 @@ svgChoro.append("rect")
 
 
 var svgScatter = d3.select("#scatter").append("svg")
-    .attr("width", width / 2)
-    .attr("height", height / 2)
+    .attr("width", widthSmallPlot)
+    .attr("height", heightSmallPlot)
     .attr("id", "scatterSvg")
 svgScatter.append("rect")
-    .attr("width", width / 2)
-    .attr("height", height / 2)
+    .attr("width", widthSmallPlot)
+    .attr("height", heightSmallPlot)
     .attr("fill", "lightgray")
 
 var svgTime = d3.select("#time").append("svg")
-    .attr("width", width / 2)
-    .attr("height", height / 2)
+    .attr("width", widthSmallPlot)
+    .attr("height", heightSmallPlot)
     .attr("id", "timeSvg")
 
 svgTime.append("rect")
-    .attr("width", width / 2)
-    .attr("height", height / 2)
+    .attr("width", widthSmallPlot)
+    .attr("height", heightSmallPlot)
     .attr("fill", "lightgray")
 
 var projection = d3.geoNaturalEarth1()
@@ -81,21 +85,21 @@ function createLegend(selectedCountries) {
 
     leg = d3.select("body").append("svg")
         .attr("id", "legend")
-        .attr("width", width / 2)
-        .attr("height", height / 2)
+        .attr("width", widthSmallPlot)
+        .attr("height", heightSmallPlot)
 
-    
+
     leg.append("rect")
-        .attr("width", width / 2)
+        .attr("width", widthSmallPlot)
         .attr("height", 50)
         .attr("fill", "lightgray")
 
 
     leg.append("text")
-       .text("Legend")
-       .attr("x", width/4)
-       .attr("y", 15)
-       .style("text-anchor", "middle")
+        .text("Legend")
+        .attr("x", widthSmallPlot / 2)
+        .attr("y", 15)
+        .style("text-anchor", "middle")
 
     let selectedIds = new Array()
     let itr = selectedCountries.keys()
@@ -111,7 +115,7 @@ function createLegend(selectedCountries) {
         .enter()
         .append("rect")
         .attr("fill", (d) => getColor(d))
-        .attr("x", (d, i) => i * (width / 2 / selectedIds.length) + 10)
+        .attr("x", (d, i) => i * (widthSmallPlot / selectedIds.length) + 10)
         .attr("y", 30)
         .attr("width", 10)
         .attr("height", 10)
@@ -121,7 +125,7 @@ function createLegend(selectedCountries) {
         .enter()
         .append("text")
         .text((d) => d)
-        .attr("x", (d, i) => i * (width / 2 / selectedIds.length) + 22)
+        .attr("x", (d, i) => i * (widthSmallPlot / selectedIds.length) + 22)
         .attr("y", 40)
 
 }
@@ -143,8 +147,8 @@ function updateTimeSeries(countriesData, curYear) {
         svgTime.selectAll("*").remove()
 
         svgTime.append("rect")
-            .attr("width", width / 2)
-            .attr("height", height / 2)
+            .attr("width", widthSmallPlot)
+            .attr("height", heightSmallPlot)
             .attr("fill", "lightgray")
 
         let paths = svgTime.select("#countryPaths")
@@ -169,8 +173,8 @@ function updateTimeSeries(countriesData, curYear) {
 
         let extentDeaths = d3.extent(Array.from(deaths.values()))
 
-        let scaleTime = d3.scaleLinear().domain(extentTime).range([padding, width / 2 - padding / 4])
-        let scaleDeath = d3.scaleLinear().domain(extentDeaths).range([height / 2 - padding, padding / 3])
+        let scaleTime = d3.scaleLinear().domain(extentTime).range([padding, widthSmallPlot - padding / 4])
+        let scaleDeath = d3.scaleLinear().domain(extentDeaths).range([heightSmallPlot - padding, padding / 3])
 
 
         countryTime.enter()
@@ -200,14 +204,11 @@ function updateTimeSeries(countriesData, curYear) {
         timeSeriesAxis.call(axisXTime)
         attrSeriesAxis.call(axisYTime)
 
-        timeSeriesAxis.attr("transform", `translate(0, ${height / 2 - padding})`)
+        timeSeriesAxis.attr("transform", `translate(0, ${heightSmallPlot - padding})`)
         attrSeriesAxis.attr("transform", `translate(${padding}, 0)`)
 
-        svgTime.append("text").attr("class", "xTimeTitle").text("Year").attr("transform", `translate(${width / 4}, ${height / 2 - padding / 4})`)
-        svgTime.append("text").attr("class", "yTimeTitle").text("Suicide No.").attr("transform", `translate(${padding / 3}, ${height / 3})rotate(-90)`)
-
-
-
+        svgTime.append("text").attr("class", "xTimeTitle").text("Year").attr("transform", `translate(${widthSmallPlot / 2}, ${heightSmallPlot - padding / 4})`)
+        svgTime.append("text").attr("class", "yTimeTitle").text("Suicide No.").attr("transform", `translate(${padding / 3}, ${heightSmallPlot/2})rotate(-90)`)
     }
 }
 
@@ -241,9 +242,9 @@ function createPathTime(d, attr, timeScale, attrScale) {
     path.moveTo(timeScale(vals[0]["year"]), attrScale(vals[0][attr]))
 
     vals.forEach((d) => {
-        if(d["year"] > endYear){
+        if (d["year"] > endYear) {
             path.moveTo(timeScale(d["year"]), attrScale(d[attr]))
-        }else{
+        } else {
             path.lineTo(timeScale(d["year"]), attrScale(d[attr]))
         }
     })
@@ -317,6 +318,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
         .append("path")
         .attr("d", path)
         .attr("class", "country")
+        .attr("id", (d) => "" + d.id)
         .attr("stroke-width", 2)
 
     function getAll(attr) {
@@ -346,7 +348,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
         let shapes = countryShapes.filter((d) => !selectedCountries.has(d.id))
         shapes.transition("highlight").duration(200).style("opacity", .75)
         if (!selectedCountries.has(d.id)) {
-            d3.select(this).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "3px")
+            d3.select("#" + d.id).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "3px")
         }
     })
 
@@ -356,30 +358,30 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     })
     let selectedCountries = new Map()
 
-    countryShapes.on("click", function (d) {
-        console.log(d)
-        console.log(d.properties.name)
+    countryShapes.on("click", selectCountry)
 
+    function selectCountry(d){
         if (countries.includes(d.properties.name)) {
             if (selectedCountries.has(d.id)) {
                 console.log(cateColorMap)
                 cateColorMap.delete(d.id)
                 selectedCountries.delete(d.id)
-            } 
-            else if(selectedCountries.size < 8) {
-                d3.select(this).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "2px")
+                d3.select("#" + d.id).transition("gsfr").duration(200).style("opacity", 1).style("stroke-width", ".5px")
+            }
+            else if (selectedCountries.size < 8) {
+                d3.select("#" + d.id).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "2px")
                 selectedCountries.set(d.id, d)
             }
             update(getYear())
         }
-    })
+    }
 
 
     console.log(data)
-    svgScatter.append("g").attr("class", "xAxis").attr("transform", `translate(0,${height / 2 - padding + 2})`)
+    svgScatter.append("g").attr("class", "xAxis").attr("transform", `translate(0,${heightSmallPlot - padding + 2})`)
     svgScatter.append("g").attr("class", "yAxis").attr("transform", `translate(${padding},2)`)
-    svgScatter.append("text").attr("class", "xTitle").text("Suicide No.").attr("transform", `translate(${width / 4 - padding}, ${height / 2 - padding / 4})`)
-    svgScatter.append("text").attr("class", "yTitle").text("GDP").attr("transform", `translate(${padding / 3}, ${height / 4})rotate(-90)`)
+    svgScatter.append("text").attr("class", "xTitle").text("Suicide No.").attr("transform", `translate(${(widthSmallPlot -padding) / 2}, ${heightSmallPlot - padding / 4})`)
+    svgScatter.append("text").attr("class", "yTitle").text("GDP").attr("transform", `translate(${padding / 3}, ${heightSmallPlot/2})rotate(-90)`)
 
     function update(year) {
         let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
@@ -403,10 +405,10 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
 
         var scatterXScale = d3.scaleSqrt()
             .domain(totalRange)
-            .range([padding, width / 2 - padding / 4])
+            .range([padding, widthSmallPlot - padding / 4])
         var scatterYScale = d3.scaleSqrt()
             .domain(gdpRange)
-            .range([height / 2 - padding, padding / 3])
+            .range([heightSmallPlot - padding, padding / 3])
 
         var scatterRScale = d3.scaleLinear()
             .domain(popRange)
@@ -434,7 +436,12 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", .55)
-            .attr("fill", (d) => { if (selectedCountries.has(d.id)) { return "orange" } else { return "blue" } })
+
+        console.log(d3.selectAll(".test"))
+        d3.selectAll(".test")
+            .on("mouseover", toolTip)
+            .on("click", selectCountry)
+
 
         d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return getColor(d.id) } else { return "blue" } })
             .attr("cx", (d) => { return getTotal(d, year, "total", scatterXScale) })
@@ -444,6 +451,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("stroke", (d) => { console.log("HE"); if (selectedCountries.has(d.id)) { return "black" } return "None" })
             .style("stroke-width", (d) => { if (selectedCountries.has(d.id)) { return "1px" } return "0px" })
 
+
         if (selectedCountries.size != 0) {
             updateTimeSeries(Array.from(selectedCountries.values()), year)
             createLegend(selectedCountries)
@@ -452,8 +460,8 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             svgTime.selectAll("*").remove()
             d3.select("#legend").remove()
             svgTime.append("rect")
-                .attr("width", width / 2)
-                .attr("height", height / 2)
+                .attr("width", widthSmallPlot)
+                .attr("height", heightSmallPlot)
                 .attr("fill", "lightgray")
         }
     }
@@ -516,7 +524,9 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
 })
 
 
-
+function toolTip(d) {
+    console.log(d)
+}
 
 
 
