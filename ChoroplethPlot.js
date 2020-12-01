@@ -95,17 +95,40 @@ function createColorScale(dataRange, dom) {
     let scale
     console.log(dom)
     console.log(dataRange)
-    
 
-    if (svgChoro.select(".scale").empty()) {
-        svgChoro.append("g").attr("class", "scale")
-        scale = svgChoro.select(".scale")
+    scale = svgChoro.append("g").attr("class", "scale")
+
+
+
+    for(let i = 0; i < dom.length; i++){
+        let d = dom[i]
+        console.log
+        scale.append("rect")
+            .attr("y", -25)
+            .attr("x", i*50)
+            .attr("width", 50)
+            .attr("height", 10)
+            .attr("fill", colorScale(d))
+            .attr("stroke", "black")
+        scale.append("text")
+            .text(Math.round(d/100)*100)
+            .attr("x", i*50)
+            .style("text-anchor", "middle")
         
-        scale.attr("transform", `translate(0, ${height - padding / 2})`)
-    } else {
-        scale = svg.select(".legend")
-        scale.selectAll("rect").each(function (d, i) { d3.select(this).attr("fill", colorScale((i / 100) * dataRange[1])) }) //Updates the legend
+            
+
     }
+
+
+
+    scale.append("text")
+         .text(Math.round(dataRange[1]/100)*100)
+         .attr("x", 50*dom.length)
+         .style("text-anchor", "middle")
+
+         
+
+    scale.attr("transform", `translate(20, ${height-padding})`)
 }
 
 function createLegend(selectedCountries) {
@@ -115,7 +138,7 @@ function createLegend(selectedCountries) {
         .attr("id", "legend")
         .attr("width", widthSmallPlot)
         .attr("height", heightSmallPlot)
-        .style("padding-left", widthSmallPlot/2)
+        .style("padding-left", widthSmallPlot / 2)
 
 
     leg.append("rect")
@@ -237,7 +260,7 @@ function updateTimeSeries(countriesData, curYear) {
         attrSeriesAxis.attr("transform", `translate(${padding}, 0)`)
 
         svgTime.append("text").attr("class", "xTimeTitle").text("Year").attr("transform", `translate(${widthSmallPlot / 2}, ${heightSmallPlot - padding / 4})`)
-        svgTime.append("text").attr("class", "yTimeTitle").text("Suicide No.").attr("transform", `translate(${padding / 3}, ${heightSmallPlot/2})rotate(-90)`)
+        svgTime.append("text").attr("class", "yTimeTitle").text("Suicide No.").attr("transform", `translate(${padding / 3}, ${heightSmallPlot / 2})rotate(-90)`)
     }
 }
 
@@ -389,7 +412,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
 
     countryShapes.on("click", selectCountry)
 
-    function selectCountry(d){
+    function selectCountry(d) {
         if (countries.includes(d.properties.name)) {
             if (selectedCountries.has(d.id)) {
                 console.log(cateColorMap)
@@ -409,8 +432,8 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     console.log(data)
     svgScatter.append("g").attr("class", "xAxis").attr("transform", `translate(0,${heightSmallPlot - padding + 2})`)
     svgScatter.append("g").attr("class", "yAxis").attr("transform", `translate(${padding},2)`)
-    svgScatter.append("text").attr("class", "xTitle").text("Suicide No.").attr("transform", `translate(${(widthSmallPlot -padding) / 2}, ${heightSmallPlot - padding / 4})`)
-    svgScatter.append("text").attr("class", "yTitle").text("GDP").attr("transform", `translate(${padding / 3}, ${heightSmallPlot/2})rotate(-90)`)
+    svgScatter.append("text").attr("class", "xTitle").text("Suicide No.").attr("transform", `translate(${(widthSmallPlot - padding) / 2}, ${heightSmallPlot - padding / 4})`)
+    svgScatter.append("text").attr("class", "yTitle").text("GDP").attr("transform", `translate(${padding / 3}, ${heightSmallPlot / 2})rotate(-90)`)
 
     function update(year) {
         let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
@@ -465,13 +488,13 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", .55)
-            
+
 
         console.log(d3.selectAll(".test"))
         d3.selectAll(".test")
             .on("click", selectCountry)
             .append("title")
-            .text((d) => {return d.properties.name})
+            .text((d) => { return d.properties.name })
 
 
         d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return getColor(d.id) } else { return "blue" } })
@@ -549,9 +572,10 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             return properties.years.get(year)[attr]
         }
     }
-    let dom = [totalRange[0], totalRange[1]*.1, totalRange[1]*.25, totalRange[1]*.65, totalRange[1]]
-    
-    colorScale = d3.scaleThreshold().domain(dom).range(d3.schemeBlues[4])
+    let dom = [totalRange[0], totalRange[1] * .1, totalRange[1] * .25, totalRange[1] * .65]
+
+    colorScale = d3.scaleThreshold().domain(dom).range(d3.schemeBlues[5])
+    console.log(d3.schemeBlues[4])
 
     setupScatter(data, countries, startYear)
     createColorScale(totalRange, dom)
