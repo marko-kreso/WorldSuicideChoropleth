@@ -29,8 +29,8 @@ var padding = 50
 var width = 1000
 var height = 500
 
-var widthSmallPlot = 800
-var heightSmallPlot = 400
+var widthSmallPlot = 700
+var heightSmallPlot = 300
 
 var svgChoro = d3.select("#choro").append("svg")
     .attr("width", width)
@@ -39,8 +39,13 @@ var svgChoro = d3.select("#choro").append("svg")
     .call(d3.zoom().on("zoom", function () {
         svgChoro.attr("transform", d3.event.transform)
     })).append("g")
+
 d3.select("#choro").style("background-color", "lightgray").style("display", "inline-block")
+d3.select("#time").style("display", "inline-block")
+d3.select("#scatter").style("display", "inline-block")
+
 svgChoro.append("rect")
+
     .attr("width", width)
     .attr("height", height)
     .attr("fill", "lightgray")
@@ -50,15 +55,18 @@ var svgScatter = d3.select("#scatter").append("svg")
     .attr("width", widthSmallPlot)
     .attr("height", heightSmallPlot)
     .attr("id", "scatterSvg")
+
 svgScatter.append("rect")
     .attr("width", widthSmallPlot)
     .attr("height", heightSmallPlot)
     .attr("fill", "lightgray")
 
+
 var svgTime = d3.select("#time").append("svg")
     .attr("width", widthSmallPlot)
     .attr("height", heightSmallPlot)
     .attr("id", "timeSvg")
+
 
 svgTime.append("rect")
     .attr("width", widthSmallPlot)
@@ -70,8 +78,6 @@ var projection = d3.geoNaturalEarth1()
 var path = d3.geoPath()
     .projection(projection)
 
-colorScale = d3.scaleQuantize(extent, d3.schemeBlues[5])
-
 var nameMap = {
     "The Bahamas": "Bahamas",
     "South Korea": "Republic of Korea",
@@ -80,6 +86,28 @@ var nameMap = {
     "England": "United Kingdom",
     "USA": "United States"
 }
+
+function createColorScale(dataRange, dom) {
+    /*Creates a visual cue to inform the users the colors corresponding to tha volume datapoints
+    * Parameters: None
+    * Returns: None
+    */
+    let scale
+    console.log(dom)
+    console.log(dataRange)
+    
+
+    if (svgChoro.select(".scale").empty()) {
+        svgChoro.append("g").attr("class", "scale")
+        scale = svgChoro.select(".scale")
+        
+        scale.attr("transform", `translate(0, ${height - padding / 2})`)
+    } else {
+        scale = svg.select(".legend")
+        scale.selectAll("rect").each(function (d, i) { d3.select(this).attr("fill", colorScale((i / 100) * dataRange[1])) }) //Updates the legend
+    }
+}
+
 function createLegend(selectedCountries) {
     let leg = d3.select("#legend").remove()
 
@@ -87,6 +115,7 @@ function createLegend(selectedCountries) {
         .attr("id", "legend")
         .attr("width", widthSmallPlot)
         .attr("height", heightSmallPlot)
+        .style("padding-left", widthSmallPlot/2)
 
 
     leg.append("rect")
@@ -181,7 +210,7 @@ function updateTimeSeries(countriesData, curYear) {
             .append("path")
             .attr("d", (d) => createPathTime(d, "total", scaleTime, scaleDeath))
             .attr("stroke", (d) => { return getColor(d.values()[0].id); })
-            .style("stroke-width", 1)
+            .style("stroke-width", 5)
             .attr("fill", "None")
 
         countryTime.enter()
@@ -220,11 +249,11 @@ function createCircleTime(d, attr, timeScale, attrScale, curYear) {
 
     circ.enter()
         .append("circle")
-        .attr("r", 2)
+        .attr("r", 4)
         .attr("cx", (d) => { return timeScale(d["year"]) })
         .attr("cy", (d) => { return attrScale(d[attr]) })
         .attr("stroke", "black")
-        .style("stroke-width", .5)
+        .style("stroke-width", 1)
         .attr("fill", (d) => {
             if (curYear == d["year"]) {
                 return "red";
@@ -271,7 +300,7 @@ function getColor(id) {
         console.log("HAS!!!")
         return cateColorMap.get(id)
     } else {
-        let colorCopy = JSON.parse(JSON.stringify(d3.schemeSet3))
+        let colorCopy = JSON.parse(JSON.stringify(d3.schemeTableau10))
         console.log(cateColorMap)
         cateColorMap.forEach((v) => {
             colorCopy.splice(colorCopy.indexOf(v), 1)
@@ -369,7 +398,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
                 d3.select("#" + d.id).transition("gsfr").duration(200).style("opacity", 1).style("stroke-width", ".5px")
             }
             else if (selectedCountries.size < 8) {
-                d3.select("#" + d.id).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "2px")
+                d3.select("#" + d.id).transition("highlight").duration(200).style("opacity", 1).style("stroke-width", "1.5px")
                 selectedCountries.set(d.id, d)
             }
             update(getYear())
@@ -436,11 +465,13 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", .55)
+            
 
         console.log(d3.selectAll(".test"))
         d3.selectAll(".test")
-            .on("mouseover", toolTip)
             .on("click", selectCountry)
+            .append("title")
+            .text((d) => {return d.properties.name})
 
 
         d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return getColor(d.id) } else { return "blue" } })
@@ -518,15 +549,15 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             return properties.years.get(year)[attr]
         }
     }
+    let dom = [totalRange[0], totalRange[1]*.1, totalRange[1]*.25, totalRange[1]*.65, totalRange[1]]
+    
+    colorScale = d3.scaleThreshold().domain(dom).range(d3.schemeBlues[4])
 
     setupScatter(data, countries, startYear)
+    createColorScale(totalRange, dom)
     update(startYear)
 })
 
-
-function toolTip(d) {
-    console.log(d)
-}
 
 
 
