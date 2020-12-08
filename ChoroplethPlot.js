@@ -39,7 +39,7 @@ var width = 1000
 var height = 500
 
 var widthSmallPlot = 700
-var heightSmallPlot = 300
+var heightSmallPlot = 250
 
 var svgChoro = d3.select("#choro").append("svg")
     .attr("width", width)
@@ -49,7 +49,7 @@ var svgChoro = d3.select("#choro").append("svg")
         svgChoro.attr("transform", d3.event.transform)
     })).append("g")
 
-d3.select("#choro").style("background-color", "lightgray").style("display", "inline-block")
+d3.select("#choro").style("background-color", "WHITESMOKE").style("display", "inline-block")
 d3.select("#time").style("display", "inline-block")
 d3.select("#scatter").style("display", "inline-block")
 
@@ -68,7 +68,7 @@ var svgScatter = d3.select("#scatter").append("svg")
 svgScatter.append("rect")
     .attr("width", widthSmallPlot)
     .attr("height", heightSmallPlot)
-    .attr("fill", "lightgray")
+    .attr("fill", "WHITESMOKE")
 
 
 var svgTime = d3.select("#time").append("svg")
@@ -80,7 +80,7 @@ var svgTime = d3.select("#time").append("svg")
 svgTime.append("rect")
     .attr("width", widthSmallPlot)
     .attr("height", heightSmallPlot)
-    .attr("fill", "lightgray")
+    .attr("fill", "WHITESMOKE")
 
 var projection = d3.geoNaturalEarth1()
 
@@ -171,7 +171,8 @@ function createLegend(selectedCountries) {
     leg.append("rect")
         .attr("width", widthSmallPlot)
         .attr("height", 50)
-        .attr("fill", "lightgray")
+        .attr("fill", "WHITESMOKE")
+        .attr("stroke", "black")    
 
 
     leg.append("text")
@@ -206,7 +207,7 @@ function createLegend(selectedCountries) {
         .text((d) => d)
         .attr("x", (d, i) => i * (widthSmallPlot / selectedIds.length) + 22)
         .attr("y", 40)
-    leg.attr("transform", `translate(${widthSmallPlot/2}, 0)`)
+    leg.attr("transform", `translate(${widthSmallPlot/2-200}, 0)`)
 }
 function setupScatter(data, countries, year) {
     let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
@@ -228,7 +229,7 @@ function updateTimeSeries(countriesData, curYear) {
         svgTime.append("rect")
             .attr("width", widthSmallPlot)
             .attr("height", heightSmallPlot)
-            .attr("fill", "lightgray")
+            .attr("fill", "WHITESMOKE")
 
         let paths = svgTime.select("#countryPaths")
         let timeSeriesAxis = svgTime.select("#timeSeriesTimeAxis")
@@ -554,7 +555,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             svgTime.append("rect")
                 .attr("width", widthSmallPlot)
                 .attr("height", heightSmallPlot)
-                .attr("fill", "lightgray")
+                .attr("fill", "WHITESMOKE")
         }
     }
 
@@ -613,7 +614,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     let dom = [totalRange[0], totalRange[1] * .1, totalRange[1] * .25, totalRange[1] * .65]
 
     colorScale = d3.scaleThreshold().domain(dom).range(d3.schemeBlues[5])
-    console.log(d3.schemeBlues[4])
+    console.log(d3.schemeBlues[5])
 
     setupScatter(data, countries, startYear)
     createColorScale(totalRange, dom)

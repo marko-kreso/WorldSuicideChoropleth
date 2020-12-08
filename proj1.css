@@ -9,11 +9,18 @@
 
 body{
     margin: 0 auto;
+    background-color: WHITESMOKE;
+}
+.center{
     text-align: center;
-    background-color: LAVENDERBLUSH;
+}
+
+#selection{
+    margin-left: 300px;
 }
 
 h1{
-    color:black;
-    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color:#08519c;
+    font-family: Helvetica, Arial, sans-serif;
+    text-shadow: 1px 1px lightgray;
 }
