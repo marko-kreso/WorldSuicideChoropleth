@@ -57,7 +57,7 @@ svgChoro.append("rect")
 
     .attr("width", width)
     .attr("height", height)
-    .attr("fill", "lightgray")
+    .attr("fill", "WHITESMOKE")
 
 
 var svgScatter = d3.select("#scatter").append("svg")
@@ -478,7 +478,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
         console.log(validValues)
         slider.property("value", year)
 
-        d3.select(".year").text(year)
+        d3.select("h1").text("Global Suicide Data " + year)
         countryShapes.attr("fill", (d) => {
             let properties = d.properties
             if (countries.includes(properties.name) && properties.years.has(year)) {

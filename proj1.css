@@ -6,3 +6,14 @@
 .slider{
     display: inline-block;
 }
+
+body{
+    margin: 0 auto;
+    text-align: center;
+    background-color: LAVENDERBLUSH;
+}
+
+h1{
+    color:black;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
