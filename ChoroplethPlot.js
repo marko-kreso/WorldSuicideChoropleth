@@ -98,6 +98,8 @@ var nameMap = {
 
 var attrSelection = d3.select("body")
     .select("#selection")
+    .style("float", "left")
+    .attr("min-height", "50px")
 
 var options = attrSelection.selectAll("option").data(quanAttr)
     .enter()
@@ -121,7 +123,7 @@ function createColorScale(dataRange, dom) {
     scale = svgChoro.append("g").attr("class", "scale")
 
 
-
+    let format = d3.format(".2s");
     for (let i = 0; i < dom.length; i++) {
         let d = dom[i]
         console.log
@@ -133,7 +135,7 @@ function createColorScale(dataRange, dom) {
             .attr("fill", colorScale(d))
             .attr("stroke", "black")
         scale.append("text")
-            .text(Math.round(d / 100) * 100)
+            .text(format(d))
             .attr("x", i * 50)
             .style("text-anchor", "middle")
     }
@@ -141,7 +143,7 @@ function createColorScale(dataRange, dom) {
 
 
     scale.append("text")
-        .text(Math.round(dataRange[1] / 100) * 100)
+        .text(format(dataRange[1]))
         .attr("x", 50 * dom.length)
         .style("text-anchor", "middle")
 
@@ -161,7 +163,9 @@ function createLegend(selectedCountries) {
         .attr("id", "legend")
         .attr("width", widthSmallPlot)
         .attr("height", heightSmallPlot)
+        .attr("display", "inline-block")
         .style("padding-left", widthSmallPlot / 2)
+        
 
 
     leg.append("rect")
@@ -202,7 +206,7 @@ function createLegend(selectedCountries) {
         .text((d) => d)
         .attr("x", (d, i) => i * (widthSmallPlot / selectedIds.length) + 22)
         .attr("y", 40)
-
+    leg.attr("transform", `translate(${widthSmallPlot/2}, 0)`)
 }
 function setupScatter(data, countries, year) {
     let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
