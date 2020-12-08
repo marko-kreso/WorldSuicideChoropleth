@@ -5,10 +5,20 @@ data = suicide
 
 catAttr = Object.keys(data[0]).filter((d) => typeof data[0][d] === "string")
 quanAttr = Object.keys(data[0]).filter((d) => typeof data[0][d] === "number")
+quanAttr.sort().pop()
+
+quanMap = new Map()
+quanMap.set("suicides_no", "total")
+quanMap.set("suicides/100k pop", "totalProp")
+quanMap.set("population", "pop")
+quanMap.set("gdp_per_capita ($)", "gdp")
+
+revMap = new Map(Array.from(quanMap, a => a.reverse()))
+
 extent = d3.extent(data, (d) => d.suicides_no)
 years = d3.extent(data, (d) => d.year)
 years[1]--;
-
+console.log(quanAttr)
 data2 = d3.nest()
     .key((d) => d.country)
     .key((d) => d.year)
@@ -16,7 +26,7 @@ data2 = d3.nest()
         return {
             total: d3.sum(d, (v) => v.suicides_no),
             d,
-            totalProp: d3.sum(d, (v) => v["suicides/100k pop"]),
+            totalProp: d3.sum(d, (v) => v.suicides_no)/d3.sum(d, (v) => v.population/100000),
             pop: d3.sum(d, (v) => v.population),
             gdp: Number(d[0]['gdp_for_year ($)'].split(",").join("")),
             year: Number(d[0]["year"]),
@@ -24,7 +34,6 @@ data2 = d3.nest()
         };
     })
     .map(data)
-
 var padding = 50
 var width = 1000
 var height = 500
@@ -87,6 +96,19 @@ var nameMap = {
     "USA": "United States"
 }
 
+var attrSelection = d3.select("body")
+    .select("#selection")
+
+var options = attrSelection.selectAll("option").data(quanAttr)
+    .enter()
+    .append("option")
+    .property("value", (d) => {console.log(d); return quanMap.get(d)})
+    .text((d) => d);
+options.property("selected", (d) => d === "gdp")
+
+
+
+
 function createColorScale(dataRange, dom) {
     /*Creates a visual cue to inform the users the colors corresponding to tha volume datapoints
     * Parameters: None
@@ -100,39 +122,40 @@ function createColorScale(dataRange, dom) {
 
 
 
-    for(let i = 0; i < dom.length; i++){
+    for (let i = 0; i < dom.length; i++) {
         let d = dom[i]
         console.log
         scale.append("rect")
             .attr("y", -25)
-            .attr("x", i*50)
+            .attr("x", i * 50)
             .attr("width", 50)
             .attr("height", 10)
             .attr("fill", colorScale(d))
             .attr("stroke", "black")
         scale.append("text")
-            .text(Math.round(d/100)*100)
-            .attr("x", i*50)
+            .text(Math.round(d / 100) * 100)
+            .attr("x", i * 50)
             .style("text-anchor", "middle")
-        
-            
-
     }
 
 
 
     scale.append("text")
-         .text(Math.round(dataRange[1]/100)*100)
-         .attr("x", 50*dom.length)
+        .text(Math.round(dataRange[1] / 100) * 100)
+        .attr("x", 50 * dom.length)
+        .style("text-anchor", "middle")
+
+    scale.append("text")
+         .text("Number of Suicides")
+         .attr("transform", `translate(${50*dom.length/2}, -30)`)
          .style("text-anchor", "middle")
 
-         
-
-    scale.attr("transform", `translate(20, ${height-padding})`)
+    scale.attr("transform", `translate(20, ${height - padding})`)
 }
 
 function createLegend(selectedCountries) {
     let leg = d3.select("#legend").remove()
+    console.log(selectedCountries)
 
     leg = d3.select("body").append("svg")
         .attr("id", "legend")
@@ -229,17 +252,6 @@ function updateTimeSeries(countriesData, curYear) {
         let scaleDeath = d3.scaleLinear().domain(extentDeaths).range([heightSmallPlot - padding, padding / 3])
 
 
-        countryTime.enter()
-            .append("path")
-            .attr("d", (d) => createPathTime(d, "total", scaleTime, scaleDeath))
-            .attr("stroke", (d) => { return getColor(d.values()[0].id); })
-            .style("stroke-width", 5)
-            .attr("fill", "None")
-
-        countryTime.enter()
-            .each((d) => {
-                createCircleTime(d, "total", scaleTime, scaleDeath, curYear)
-            })
 
 
         let axisXTime = d3.axisBottom().scale(scaleTime).tickFormat(d3.format("d"))
@@ -261,6 +273,18 @@ function updateTimeSeries(countriesData, curYear) {
 
         svgTime.append("text").attr("class", "xTimeTitle").text("Year").attr("transform", `translate(${widthSmallPlot / 2}, ${heightSmallPlot - padding / 4})`)
         svgTime.append("text").attr("class", "yTimeTitle").text("Suicide No.").attr("transform", `translate(${padding / 3}, ${heightSmallPlot / 2})rotate(-90)`)
+        
+        countryTime.enter()
+            .each((d) => {
+                createCircleTime(d, "total", scaleTime, scaleDeath, curYear)
+            })
+
+        countryTime.enter()
+            .append("path")
+            .attr("d", (d) => createPathTime(d, "total", scaleTime, scaleDeath))
+            .attr("stroke", (d) => { return getColor(d.values()[0].id); })
+            .style("stroke-width", 5)
+            .attr("fill", "None")
     }
 }
 
@@ -337,6 +361,13 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     var countries = []
     cateColorMap = new Map()
     nameToId = new Map()
+    selectedAttr = "gdp"
+    
+    attrSelection.on('change', function(){
+        console.log(d3.select(this).property('value'))
+        selectedAttr = d3.select(this).property('value')
+        update(getYear())
+    })
 
     data.features.forEach(function (d) { //Grabs any countries that contain name
         let name = d.properties.name
@@ -429,13 +460,16 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
     }
 
 
-    console.log(data)
+    console.log(attrSelection)
     svgScatter.append("g").attr("class", "xAxis").attr("transform", `translate(0,${heightSmallPlot - padding + 2})`)
     svgScatter.append("g").attr("class", "yAxis").attr("transform", `translate(${padding},2)`)
     svgScatter.append("text").attr("class", "xTitle").text("Suicide No.").attr("transform", `translate(${(widthSmallPlot - padding) / 2}, ${heightSmallPlot - padding / 4})`)
-    svgScatter.append("text").attr("class", "yTitle").text("GDP").attr("transform", `translate(${padding / 3}, ${heightSmallPlot / 2})rotate(-90)`)
+    let scatterY = svgScatter.append("text").attr("class", "yTitle").text(revMap.get(selectedAttr)).style("text-anchor", "middle").attr("transform", `translate(${padding / 4}, ${heightSmallPlot / 2})rotate(-90)`)
 
     function update(year) {
+        var selectedRange = d3.extent(getAll(selectedAttr))
+        scatterY.text(revMap.get(selectedAttr))
+        console.log(selectedRange)
         let validValues = Object.values(data.features).filter((d) => { return (countries.includes(d.properties.name) && d.properties.years.has(year)) })
         console.log(validValues)
         slider.property("value", year)
@@ -459,7 +493,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
             .domain(totalRange)
             .range([padding, widthSmallPlot - padding / 4])
         var scatterYScale = d3.scaleSqrt()
-            .domain(gdpRange)
+            .domain(selectedRange)
             .range([heightSmallPlot - padding, padding / 3])
 
         var scatterRScale = d3.scaleLinear()
@@ -485,7 +519,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
 
         circ.enter().append("circle").attr("class", "test")
             .attr("cx", (d) => { return getTotal(d, year, "total", scatterXScale) })
-            .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
+            .attr("cy", (d) => getTotal(d, year, selectedAttr, scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", .55)
 
@@ -499,7 +533,7 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
 
         d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return getColor(d.id) } else { return "blue" } })
             .attr("cx", (d) => { return getTotal(d, year, "total", scatterXScale) })
-            .attr("cy", (d) => getTotal(d, year, "gdp", scatterYScale))
+            .attr("cy", (d) => getTotal(d, year, selectedAttr, scatterYScale))
             .attr("r", (d) => getTotal(d, year, "pop", scatterRScale))
             .attr("opacity", (d) => { if (selectedCountries.has(d.id)) { return .75; } return .55; })
             .attr("stroke", (d) => { console.log("HE"); if (selectedCountries.has(d.id)) { return "black" } return "None" })
