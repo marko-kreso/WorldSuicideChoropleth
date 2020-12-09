@@ -533,8 +533,14 @@ d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/w
         d3.selectAll(".test")
             .on("click", selectCountry)
             .append("title")
-            .text((d) => { return d.properties.name })
+            .text((d) => { return d.properties.name; })
 
+        d3.selectAll(".test")
+            .on("mouseover", function(d){
+                let format = d3.format('.3s')
+                d3.select(this).select("title").text(d.properties.years.get(getYear()).d[0].country + "\n" + format(d.properties.years.get(getYear())[selectedAttr]))
+            })
+            
 
         d3.selectAll(".test").transition("q").delay(100).duration(150).attr("fill", (d) => { if (selectedCountries.has(d.id)) { return getColor(d.id) } else { return "blue" } })
             .attr("cx", (d) => { return getTotal(d, year, "total", scatterXScale) })
