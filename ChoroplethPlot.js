@@ -28,7 +28,7 @@ data2 = d3.nest()
             d,
             totalProp: d3.sum(d, (v) => v.suicides_no)/d3.sum(d, (v) => v.population/100000),
             pop: d3.sum(d, (v) => v.population),
-            gdp: Number(d[0]['gdp_for_year ($)'].split(",").join("")),
+            gdp: Number(d[0]['gdp_for_year ($)'].split(",").join(""))/d3.sum(d, (v) => v.population),
             year: Number(d[0]["year"]),
             id: undefined
         };
